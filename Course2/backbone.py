@@ -3,6 +3,20 @@ import matplotlib.pyplot as plt
 import h5py
 from regularizations import *
 import scipy.io
+from optimizers import *
+import sklearn
+import sklearn.datasets
+
+def load_dataset():
+    np.random.seed(3)
+    train_X, train_Y = sklearn.datasets.make_moons(n_samples=300, noise=.2) #300 #0.2
+    # Visualize the data
+    plt.scatter(train_X[:, 0], train_X[:, 1], c=train_Y, s=40, cmap=plt.cm.Spectral);
+    train_X = train_X.T
+    train_Y = train_Y.reshape((1, train_Y.shape[0]))
+    plt.show()
+
+    return train_X, train_Y
 
 def load_2D_dataset():
     data = scipy.io.loadmat('datasets/data.mat')
@@ -313,7 +327,7 @@ def computeAccuracy(prediction, Y):
 
     return accuracy
 
-def model(X,Y, X_test, Y_test, layers_dims, drop_out_keep_prob, iteration = 1000, batch_size = 64, learning_rate=0.0075, regularization_param = 0):
+def model(X,Y, layers_dims, drop_out_keep_prob, epoch_num = 1000, batch_size = 64, learning_rate=0.0075, optimizer = "gd", regularization_param = 0, beta1 = 0.9, beta2 = 0.999):
     """
     Train the model to have appropriate weight and bias for a dataset
 
@@ -321,7 +335,7 @@ def model(X,Y, X_test, Y_test, layers_dims, drop_out_keep_prob, iteration = 1000
     X -- data, numpy array (height * width * 3, m_training_examples)
     Y -- true label of the X data, numpy array (1, m_training_examples)
     layer_dims -- the dimension of the layers
-    iteration -- iteration
+    epoch_num -- epoch_num
     learning_rate -- learning rate
 
     Returns:
@@ -331,10 +345,18 @@ def model(X,Y, X_test, Y_test, layers_dims, drop_out_keep_prob, iteration = 1000
 
     params = initialize_params_he(layers_dims)
     costs_train = []
-    costs_test = []
 
     m_training_examples = Y.shape[1]
-    for i in range(iteration):
+
+    if optimizer == "gd":
+        pass
+    elif optimizer == "momentum":
+        v = initialize_gd_with_momentum_params(layers_dims)
+    elif optimizer == "adam":
+        v,s = initialize_adam_params(layers_dims)
+        iteration = 0 #for Adam
+
+    for i in range(epoch_num):
         X_minibatches, Y_minibatches = random_minibatches(X, Y, batch_size)
         cost_train_sum = 0
         cost_test_sum = 0
@@ -347,15 +369,16 @@ def model(X,Y, X_test, Y_test, layers_dims, drop_out_keep_prob, iteration = 1000
             cost_train_sum += computeCost(AL, Y_minibatches[minibatch_num], params, regularization_param)
             grads = modelBackwardPropagation(Y_minibatches[minibatch_num], AL, caches, layers_dims, regularization_param, drop_out_keep_prob)
 
-            params = updateParams(params, grads, learning_rate)
-            AL_test, caches_test = modelForwardPropagation(X_test, params, layers_dims, drop_out_keep_prob)
-            cost_test_sum += computeCost(AL_test, Y_test, params, regularization_param)
-            #if minibatch_num%10 == 0: print("minibatch {}".format(minibatch_num+1))
+            if optimizer == "gd":
+                params = updateParams(params, grads, learning_rate)
+            elif optimizer == "momentum":
+                params, v = update_params_with_momentum(params, grads, v, learning_rate, beta1)
+            elif optimizer == "adam":
+                iteration += 1
+                params, v, s = update_params_adam_optimizer(params, grads, iteration, v, s, learning_rate, beta1, beta2)
+
         cost_train_avg = cost_train_sum / m_training_examples
-        cost_test_avg = cost_test_sum / Y_test.shape[1]
         if i % 100 == 0:
             costs_train.append(cost_train_avg)
-            print("Cost of {}th iteration: {}".format(i+1, cost_train_avg))
-        if i % 100 == 0:
-            costs_test.append(cost_test_avg)
-    return params, costs_train, costs_test
+            print("Cost of {}th epoch: {}".format(i+1, cost_train_avg))
+    return params, costs_train
