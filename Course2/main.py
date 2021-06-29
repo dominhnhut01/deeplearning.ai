@@ -1,9 +1,8 @@
-from main_method_NN import *
-from additional_method import *
+from backbone import *
+from regularizations import *
 import numpy as np
 
 if __name__ == '__main__':
-	np.random.seed(1)
 
 	train_x, train_y, test_x, test_y = load_2D_dataset()
 	print(train_x.shape)
@@ -21,13 +20,17 @@ if __name__ == '__main__':
 
 	# layers_dims = (12288,20,7,5,1)
 	layers_dims = [train_x.shape[0], 20, 3, 1]
-	drop_out_keep_prob = [0.8,0.7,0.6,1]
+	drop_out_keep_prob = [1,1,1,1]
 	regularization_param = 0.01
 
 	iteration = 20000
-	params, costs_train, costs_test = model(train_x, train_y, test_x, test_y, layers_dims = layers_dims, drop_out_keep_prob = drop_out_keep_prob, iteration = iteration, learning_rate = 0.0075, regularization_param = regularization_param)
+	batch_size = 64
+
+	params, costs_train, costs_test = model(train_x, train_y, test_x, test_y, layers_dims = layers_dims, drop_out_keep_prob = drop_out_keep_prob, iteration = iteration, batch_size = batch_size, learning_rate = 0.0075, regularization_param = regularization_param)
 	plt.plot([iteration for iteration in range(0, iteration, 100)],costs_train)
 	plt.plot([iteration for iteration in range(0, iteration, 100)],costs_test)
+
+	plt.show()
 
 	train_prediction = predict(train_x, params, layers_dims)
 	test_prediction = predict(test_x, params, layers_dims)
@@ -38,7 +41,7 @@ if __name__ == '__main__':
 	print("Accuracy on training dataset is: {}".format(train_accuracy))
 	print("Accuracy on testing dataset is: {}".format(test_accuracy))
 
-	plt.title("Model without regularization")
+	plt.title("Model results")
 
 	axes = plt.gca()
 	axes.set_xlim([-0.75,0.40])

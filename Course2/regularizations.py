@@ -10,8 +10,6 @@ def initialize_params_he(layers_dims):
 	Returns:
 	params -- dictionary containing value of weight and bias for all layers
 	"""
-
-	np.random.seed(3)
 	params = {}
 
 	net_depth = len(layers_dims) - 1    #number of layers
@@ -22,7 +20,7 @@ def initialize_params_he(layers_dims):
 
 	return params
 
-def L2_norm_cost(m_training_examples, params, regularization_param = 0):
+def L2_norm_cost(params, regularization_param = 0):
 	if regularization_param == 0:
 		return 0
 
@@ -31,7 +29,7 @@ def L2_norm_cost(m_training_examples, params, regularization_param = 0):
 	for l in range (1, net_depth+1):
 		L2_norm += np.square(np.linalg.norm(params["w" + str(l)], ord = "fro"))
 
-	L2_cost = regularization_param / (2 * m_training_examples) * L2_norm
+	L2_cost = regularization_param / 2 * L2_norm
 
 	return L2_cost
 
